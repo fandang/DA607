@@ -1,0 +1,74 @@
+---
+title: "DA607 Week 02 Assignment"
+author: "Dan Fanelli"
+date: "February 4, 2016"
+output: pdf_document
+---
+
+Set your working directory to the same location as this Rmd file.
+
+If you don't want to keep re-downloading the data files, put a # in front of the 2 download statements below:
+
+```{r}
+#download.file("https://archive.ics.uci.edu/ml/machine-learning-databases/housing/housing.data", "./housing.data")
+#download.file("https://archive.ics.uci.edu/ml/machine-learning-databases/housing/housing.names", "./housing.names")
+```
+
+Read that file into a data frame and show its str and dim:
+
+```{r}
+initial.data.frame <- read.table("./housing.data", header=FALSE)
+
+str(initial.data.frame)
+
+dim(initial.data.frame)
+
+```
+
+The following came from the HEADER file, but we'll manually rename these to be more user friendly:
+
+7. Attribute Information:
+
+    1. CRIM      per capita crime rate by town
+    2. ZN        proportion of residential land zoned for lots over 
+                 25,000 sq.ft.
+    3. INDUS     proportion of non-retail business acres per town
+    4. CHAS      Charles River dummy variable (= 1 if tract bounds 
+                 river; 0 otherwise)
+    5. NOX       nitric oxides concentration (parts per 10 million)
+    6. RM        average number of rooms per dwelling
+    7. AGE       proportion of owner-occupied units built prior to 1940
+    8. DIS       weighted distances to five Boston employment centres
+    9. RAD       index of accessibility to radial highways
+    10. TAX      full-value property-tax rate per $10,000
+    11. PTRATIO  pupil-teacher ratio by town
+    12. B        1000(Bk - 0.63)^2 where Bk is the proportion of blacks 
+                 by town
+    13. LSTAT    % lower status of the population
+    14. MEDV     Median value of owner-occupied homes in $1000's
+
+Now, lets set the col names exactly as they were in that header file:
+
+```{r}
+colnames(initial.data.frame) <- c("CRIM", "ZN", "INDUS", "CHAS", "NOX", "RM", "AGE", "DIS", "RAD", "TAX", "PTRATIO", "B", "LSTAT", "MEDV")
+
+```
+
+Now, lets subset the data by column name, and take the interesting ones:
+
+```{r}
+cols.subset.data.frame <- initial.data.frame[,c("CRIM","AGE","TAX","MEDV")]
+
+head(cols.subset.data.frame)
+```
+
+Finally, lets only look at the "20-Somethings" crowd:
+
+```{r}
+rows.subset.data.frame <- cols.subset.data.frame[ which(cols.subset.data.frame$AGE>=20 & cols.subset.data.frame$AGE < 30), ]
+
+head(rows.subset.data.frame)
+```
+
+
+The End.
