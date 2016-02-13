@@ -71,8 +71,8 @@ img {
 <div id="pre-reqs" class="section level4">
 <h4>Pre Reqs:</h4>
 <ul>
-<li>The table: <strong>tb</strong> was created using prereq script: <a href="https://raw.githubusercontent.com/fandang/DA607/master/Wk03/tb.sql" class="uri">https://raw.githubusercontent.com/fandang/DA607/master/Wk03/tb.sql</a></li>
-<li>The <strong>tb</strong> table was loaded with data from csv: <a href="https://raw.githubusercontent.com/fandang/DA607/master/Wk03/tb.csv" class="uri">https://raw.githubusercontent.com/fandang/DA607/master/Wk03/tb.csv</a></li>
+<li>The table: <strong>tb</strong> was created using the script: <a href="https://raw.githubusercontent.com/fandang/DA607/master/Wk03/tb.sql" class="uri">https://raw.githubusercontent.com/fandang/DA607/master/Wk03/tb.sql</a></li>
+<li>The <strong>tb</strong> table was loaded with data from the csv: <a href="https://raw.githubusercontent.com/fandang/DA607/master/Wk03/tb.csv" class="uri">https://raw.githubusercontent.com/fandang/DA607/master/Wk03/tb.csv</a></li>
 <li>The <strong>population</strong> db table was loaded using <strong>populations.csv</strong> (<a href="https://raw.githubusercontent.com/fandang/DA607/master/Wk03/population.csv" class="uri">https://raw.githubusercontent.com/fandang/DA607/master/Wk03/population.csv</a>)</li>
 <li>The 2 tables were tested with SQL to be sure that the countries (the join column) were in sync:</li>
 </ul>
@@ -80,7 +80,7 @@ img {
 
 select count(country) from tb where country not in (select country from population)</code></pre>
 <ul>
-<li>The results for both came back 0, so the tables join columns seem to be in sync.</li>
+<li>The results for both came back <strong>0</strong>, so the tables join columns seem to be in sync.</li>
 <li>The following query was run against the DB:</li>
 </ul>
 <pre class="sql"><code>select population.country, population.year, 
@@ -93,7 +93,7 @@ group by population.country, population.year, population.population
 order by rate desc</code></pre>
 <ul>
 <li>The results of that query were exported to a csv and uploaded to: <a href="https://raw.githubusercontent.com/fandang/DA607/master/Wk03/joined_results.csv" class="uri">https://raw.githubusercontent.com/fandang/DA607/master/Wk03/joined_results.csv</a></li>
-<li>After all of that, the following was done in R:</li>
+<li>After that, the summary data was used to create a plot:</li>
 </ul>
 <pre class="r"><code>library(ggplot2)
 
@@ -107,7 +107,7 @@ head(df)</code></pre>
 ## 4    Swaziland 2006       3862    1118253 0.0035
 ## 5 South Africa 2008     154539   50267488 0.0031
 ## 6 South Africa 2007     136944   49602778 0.0028</code></pre>
-<p>Now, subset the data (pick a random few countries), to get an overall idea of the data, and plot it with GGPlot.</p>
+<p>Now, subset the data (pick a random few countries) to get an overall idea of the data, and plot it with GGPlot.</p>
 <pre class="r"><code>subsetDF &lt;- subset(df, country=='Swaziland'|country=='Bangladesh'|country=='South Africa'|country=='Guatemala'|country=='Turkey'|country=='Brazil'|country=='Spain')
   
 ggplot(subsetDF,aes(x=year,y=rate,colour=country,group=country)) + geom_line()</code></pre>

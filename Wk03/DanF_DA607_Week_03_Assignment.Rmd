@@ -6,8 +6,8 @@ output: html_document
 ---
 
 #### Pre Reqs:
-* The table: __tb__ was created using prereq script: https://raw.githubusercontent.com/fandang/DA607/master/Wk03/tb.sql
-* The __tb__ table was loaded with data from csv: https://raw.githubusercontent.com/fandang/DA607/master/Wk03/tb.csv
+* The table: __tb__ was created using the script: https://raw.githubusercontent.com/fandang/DA607/master/Wk03/tb.sql
+* The __tb__ table was loaded with data from the csv: https://raw.githubusercontent.com/fandang/DA607/master/Wk03/tb.csv
 * The __population__ db table was loaded using __populations.csv__ (https://raw.githubusercontent.com/fandang/DA607/master/Wk03/population.csv)
 * The 2 tables were tested with SQL to be sure that the countries (the join column) were in sync:
 
@@ -17,7 +17,7 @@ select count(country) from population where country not in (select country from 
 select count(country) from tb where country not in (select country from population)
 ```
 
-* The results for both came back 0, so the tables join columns seem to be in sync.
+* The results for both came back __0__, so the tables join columns seem to be in sync.
 * The following query was run against the DB:
 
 ```sql
@@ -32,7 +32,7 @@ order by rate desc
 ```
 
 * The results of that query were exported to a csv and uploaded to: https://raw.githubusercontent.com/fandang/DA607/master/Wk03/joined_results.csv
-* After all of that, the following was done in R:
+* After that, the summary data was used to create a plot:
 
 
 ```{r message=FALSE, warning=FALSE}
