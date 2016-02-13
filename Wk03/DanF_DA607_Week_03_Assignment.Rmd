@@ -1,0 +1,15 @@
+---
+title: "DA607 Week 03 Assignment"
+author: "Dan Fanelli"
+date: "February 13, 2016"
+output: pdf_document
+---
+
+First import 
+
+After DB Joins, the following CSV exists:
+
+```{r}
+
+```
+
