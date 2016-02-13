@@ -2,14 +2,25 @@
 title: "DA607 Week 03 Assignment"
 author: "Dan Fanelli"
 date: "February 13, 2016"
-output: pdf_document
+output: html_document
 ---
 
 First import 
 
 After DB Joins, the following CSV exists:
 
-```{r}
+https://raw.githubusercontent.com/fandang/DA607/master/Wk03/joined_results.csv
 
+```{r}
+library(ggplot2)
+
+dataUrl <- "https://raw.githubusercontent.com/fandang/DA607/master/Wk03/joined_results.csv"
+df <- read.csv(dataUrl, header = TRUE)
+head(df)
+
+subsetDF <- subset(df, country=='Swaziland'|country=='Bangladesh'|country=='South Africa'|country=='Guatemala'|country=='Turkey'|country=='Brazil'|country=='Spain')
+  
+ggplot(subsetDF,aes(x=year,y=rate,colour=country,group=country)) + geom_line()
+#ggplot(df,aes(x=year,y=rate,colour=country,group=country)) + geom_line()
 ```
 
