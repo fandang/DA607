@@ -5,22 +5,49 @@ date: "February 13, 2016"
 output: html_document
 ---
 
-First import 
+#### Pre Reqs:
+* The table: __tb__ was created using prereq script: https://raw.githubusercontent.com/fandang/DA607/master/Wk03/tb.sql
+* The __tb__ table was loaded with data from csv: https://raw.githubusercontent.com/fandang/DA607/master/Wk03/tb.csv
+* The __population__ db table was loaded using __populations.csv__ (https://raw.githubusercontent.com/fandang/DA607/master/Wk03/population.csv)
+* The 2 tables were tested with SQL to be sure that the countries (the join column) were in sync:
 
-After DB Joins, the following CSV exists:
+```sql
+select count(country) from population where country not in (select country from tb)
 
-https://raw.githubusercontent.com/fandang/DA607/master/Wk03/joined_results.csv
+select count(country) from tb where country not in (select country from population)
+```
 
-```{r}
+* The results for both came back 0, so the tables join columns seem to be in sync.
+* The following query was run against the DB:
+
+```sql
+select population.country, population.year, 
+(IFNULL(tb.child, 0)+IFNULL(tb.adult, 0)+IFNULL(tb.elderly, 0)) as fatalities,
+population.population, 
+((IFNULL(tb.child, 0)+IFNULL(tb.adult, 0)+IFNULL(tb.elderly, 0))/population.population) as rate
+from population, tb 
+where population.country = tb.country and population.year = tb.year
+group by population.country, population.year, population.population
+order by rate desc
+```
+
+* The results of that query were exported to a csv and uploaded to: https://raw.githubusercontent.com/fandang/DA607/master/Wk03/joined_results.csv
+* After all of that, the following was done in R:
+
+
+```{r message=FALSE, warning=FALSE}
 library(ggplot2)
 
 dataUrl <- "https://raw.githubusercontent.com/fandang/DA607/master/Wk03/joined_results.csv"
 df <- read.csv(dataUrl, header = TRUE)
 head(df)
+```
 
+Now, subset the data (pick a random few countries) to get an overall idea of the data, and plot it with GGPlot.
+
+```{r message=FALSE, warning=FALSE}
 subsetDF <- subset(df, country=='Swaziland'|country=='Bangladesh'|country=='South Africa'|country=='Guatemala'|country=='Turkey'|country=='Brazil'|country=='Spain')
   
 ggplot(subsetDF,aes(x=year,y=rate,colour=country,group=country)) + geom_line()
-#ggplot(df,aes(x=year,y=rate,colour=country,group=country)) + geom_line()
 ```
 
