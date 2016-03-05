@@ -1,0 +1,74 @@
+---
+title: "DA607 Week 06 Assignment"
+author: "Dan Fanelli"
+date: "March 2, 2016"
+output: html_document
+---
+
+# Tidying and Transforming Data
+
+### Filter, Scrub, Format:
+
+```{r message=FALSE, warning=FALSE}
+library(sqldf)
+library(zoo)
+library(knitr)
+library(dplyr)
+
+# file_path <- "arrival_delays.csv"
+file_path <- "https://raw.githubusercontent.com/fandang/DA607/master/Wk05/arrival_delays.csv"
+delays <- read.csv(file_path, header = TRUE, sep = ",")
+colnames(delays) <- c("airline","arrival_status","LA","PHO","SD","SF","SEA")
+
+# Show the data just after import and column renames
+kable(delays)
+
+delays <- filter(delays, !is.na(LA), !is.na(PHO), !is.na(SD), !is.na(SF), !is.na(SEA))
+
+delays$airline[delays$airline == ""] <- NA
+delays$airline <- na.locf(delays$airline)
+
+# get rid of commas in the numbers...otherwise the next batch of "transform" calls gives back the wrong numbers.."
+delays$LA <- gsub(",", "", delays$LA)
+delays$PHO <- gsub(",", "", delays$PHO)
+delays$SD <- gsub(",", "", delays$SD)
+delays$SF <- gsub(",", "", delays$SF)
+delays$SEA <- gsub(",", "", delays$SEA)
+
+# make sure the necessary columns are numeric - it doesn't err out without this, it just results in delayed_pct = 0
+delays <- transform(delays, LA = as.numeric(LA))
+delays <- transform(delays, PHO = as.numeric(PHO))
+delays <- transform(delays, SD = as.numeric(SD))
+delays <- transform(delays, SF = as.numeric(SF))
+delays <- transform(delays, SEA = as.numeric(SEA))
+
+kable(delays)
+
+```
+
+### Now do a few calculations:
+
+```{r message=FALSE, warning=FALSE}
+# There is a good amount of repeat in the select clause, there must be a way to get the "on_time" results and "delayed" results into variables before calculating the delay %, but wasn't able to get that done...
+kable(sqldf("select d.airline, (select (LA+PHO+SD+SF+SEA) from delays d2 where d.airline = d2.airline and arrival_status = 'on time') as num_on_time, (select (LA+PHO+SD+SF+SEA) from delays d3 where d.airline = d3.airline and arrival_status = 'delayed') as num_delayed, ((select (LA+PHO+SD+SF+SEA) from delays d2 where d.airline = d2.airline and arrival_status = 'delayed')/((select (LA+PHO+SD+SF+SEA) from delays d2 where d.airline = d2.airline and arrival_status = 'on time')+(select (LA+PHO+SD+SF+SEA) from delays d2 where d.airline = d2.airline and arrival_status = 'delayed'))) as delayed_pct from delays d group by d.airline"))
+```
+
+
+### Some R test cases to confirm the sql calculations:
+
+```{r message=FALSE, warning=FALSE}
+# now confirm it straight from the csv file:
+alaska_on_time <- c(497,221,212,503,1841)
+alaska_delayed <- c(62,12,20,102,305)
+alaska_on_time <- sum(alaska_on_time)
+alaska_delayed <- sum(alaska_delayed)
+alaska_delay_pct <- alaska_delayed / (alaska_on_time + alaska_delayed)
+cat(alaska_delayed,"/",(alaska_on_time + alaska_delayed),"=",alaska_delay_pct)
+
+amwest_on_time <- c(694,4840,383,320,201)
+amwest_delayed <- c(117,415,65,129,61)
+amwest_on_time <- sum(amwest_on_time)
+amwest_delayed <- sum(amwest_delayed)
+amwest_delay_pct <- amwest_delayed / (amwest_on_time + amwest_delayed)
+cat(amwest_delayed,"/",(amwest_on_time + amwest_delayed),"=",amwest_delay_pct)
+
