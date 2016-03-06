@@ -15,8 +15,8 @@ library(zoo)
 library(knitr)
 library(dplyr)
 
-# file_path <- "arrival_delays.csv"
-file_path <- "https://raw.githubusercontent.com/fandang/DA607/master/Wk05/arrival_delays.csv"
+file_path <- "arrival_delays.csv"
+# file_path <- "http://raw.githubusercontent.com/fandang/DA607/master/Wk06/arrival_delays.csv"
 delays <- read.csv(file_path, header = TRUE, sep = ",")
 colnames(delays) <- c("airline","arrival_status","LA","PHO","SD","SF","SEA")
 
