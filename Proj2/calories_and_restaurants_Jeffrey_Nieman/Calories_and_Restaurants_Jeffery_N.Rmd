@@ -1,0 +1,47 @@
+---
+title: "Calories and Restaurants"
+author: "Dan Fanelli"
+date: "March 12, 2016"
+output: html_document
+---
+
+### Calories and Restaurants (Jeffrey Nieman)
+
+Found a fascinating source of data on calories and nutrients of going out to eat vs. not.  The link is http://www.ars.usda.gov/SP2UserFiles/Place/80400530/pdf/1112/Table_53_RST_GEN_11.pdf and just use the first page. 
+
+Look at the caloric intake.
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+
+# required cols will be: gender, age_group, Total intake kcal for restaurant consumers, Total intake kcal for non-consumers, Percentage from restaurant for restaurant consumers
+df <- read.csv("calories and restaurants.csv", header = TRUE, sep = ",")
+
+df <- df[ , which(names(df) %in% c("Gender","Age","Total.intake.kcal.for.restaurant.consumers","Total.intake.kcal.for.non.consumers","Percentage.from.restaurant.for.restaurant.consumers"))]
+
+names(df) <- c('gender','age_group','eat_outs_total_kcal','eat_outs_rstrnt_pct','eat_ins_total_kcal')
+
+df[c(2:6),'gender'] <- "Male"
+df[c(8:12),'gender'] <- "Female"
+
+df
+```
+
+#### Compare by gender and/or age groups the difference in calories for those who eat out vs. those who did not
+
+```{r message=FALSE, warning=FALSE}
+summarise(group_by(df, gender), eat_outs_avg_cal=mean(eat_outs_total_kcal), eat_ins_avg_cal=mean(eat_ins_total_kcal))
+
+summarise(group_by(df, age_group), eat_outs_avg_cal=mean(eat_outs_total_kcal), eat_ins_avg_cal=mean(eat_ins_total_kcal))
+```
+
+#### Compare by gender and/or age groups the % of calories from restaurants for those who did eat out
+
+```{r message=FALSE, warning=FALSE}
+summarise(group_by(df, gender), eat_outs_rstrnt_cal_pct=mean(eat_outs_rstrnt_pct))
+
+summarise(group_by(df, age_group), eat_outs_rstrnt_cal_pct=mean(eat_outs_rstrnt_pct))
+```
+
+___There was no column for "EAT INS RESTAURANT PCT" (unless I missed it...)___
+

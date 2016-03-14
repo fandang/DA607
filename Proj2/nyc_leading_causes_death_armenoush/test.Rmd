@@ -1,0 +1,20 @@
+
+### 3. Calculate which cause of death has declined the most and which has increased the most in the years given.
+
+df_x <- df %>% subset(select = c(Year,Cause.of.Death,Count)) %>%
+  mutate(MaxYear = max(Year), MinYear = min(Year), MaxYearCount = Count[Year = MaxYear], MinYearCount = Count[Year = MinYear], ChangeCount = MaxYearCount - MinYearCount)
+
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+library(knitr)
+
+df <- read.csv("New_York_City_Leading_Causes_of_Death.csv", header=TRUE, sep=",")
+
+df_x <- df %>% subset(select = c(Year,Cause.of.Death,Count)) %>%
+  group_by(Year, Cause.of.Death, the_min = min(Count), the_max = max(Count), the_diff = (the_max - the_min)) %>% count(Year, Cause.of.Death, max(the_diff))
+
+df_x
+
+#kable(df3)
+```

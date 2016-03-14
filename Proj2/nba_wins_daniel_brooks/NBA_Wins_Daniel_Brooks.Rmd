@@ -1,0 +1,83 @@
+---
+title: "NBA Wins"
+author: "Dan Fanelli"
+date: "March 12, 2016"
+output: html_document
+---
+
+### NBA (Daniel Brooks)
+
+Do to my love of sports, I founf the franchise wins for each NBA basketball team from 1946-2015:
+
+http://www.basketball-reference.com/leagues/NBA_wins.html
+
+__Analysis:__
+
+1) Most overall wins in franchise history of the lifetime of the NBA/BBA
+
+2) Most wins by a team over the time span
+
+3) Most wins by a team by year
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+
+get_base_data <- function(){
+  nba_df <- read.csv("leagues_NBA_wins_active.csv", header = TRUE, sep = ",") %>%
+    filter(Rk != 'Rk', Season != 'Total')
+  # take the dasehs out - this is going to have to be a matrix at some point later...
+  nba_df$Season <- gsub("-", "", nba_df$Season)
+  return (nba_df)
+}
+
+get_winners <- function(subset_df){
+  the_teams_names <- colnames(subset_df)
+  mtrx <- matrix(as.numeric(unlist(subset_df)),nrow=nrow(subset_df))
+  df <- as.data.frame(colSums(mtrx))
+  colnames(df) <- c("wins")
+  df$team <- the_teams_names
+  head(arrange(df, desc(wins)), n=10)
+}
+
+most_wins_total <- function(){
+  get_base_data() %>% 
+    subset(select = -c(Rk,Season,Lg)) %>% 
+    get_winners()
+}
+
+most_wins_for_interval <- function(start_season, end_season){
+  start_season <- gsub("-", "", start_season)
+  end_season <- gsub("-", "", end_season)
+
+  get_base_data() %>% 
+    subset(select = -c(Rk,Lg)) %>% 
+    filter(Season >= start_season & Season <= end_season) %>% 
+    subset(select = -c(Season)) %>% 
+    get_winners()
+}
+
+most_wins_for_specific_season <- function(season){
+  most_wins_for_interval(season, season)
+}
+```
+
+### Most Wins:
+
+```{r message=FALSE, warning=FALSE}
+most_wins_total()
+```
+
+### Most wins by a team over the time span
+
+```{r message=FALSE, warning=FALSE}
+most_wins_for_interval('1990-91', '1999-00')
+```
+
+### Most wins by a team by year
+
+```{r message=FALSE, warning=FALSE}
+# Lakers went 63-19 in 89-90
+most_wins_for_specific_season('1989-90')
+```
+
+

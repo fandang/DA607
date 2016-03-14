@@ -2,7 +2,7 @@
 title: "DA607 Week 03 Assignment"
 author: "Dan Fanelli"
 date: "February 13, 2016"
-output: html_document
+output: pdf_document
 ---
 
 #### Pre Reqs:
