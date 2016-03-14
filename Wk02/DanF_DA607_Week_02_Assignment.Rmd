@@ -2,7 +2,7 @@
 title: "DA607 Week 02 Assignment"
 author: "Dan Fanelli"
 date: "February 4, 2016"
-output: pdf_document
+output: html_document
 ---
 
 Set your working directory to the same location as this Rmd file.

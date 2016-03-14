@@ -1,0 +1,222 @@
+---
+title: "Project 1 - DA 607"
+author: "Dan Fanelli"
+date: "February 21, 2016"
+output: html_document
+---
+
+## Required imports: 
+
+```{r warning=FALSE}
+library(stringr)
+library(readr)
+```
+
+## A couple utility functions:
+
+```{r}
+# for debugging during development
+DO_DEBUG <- FALSE
+
+# get the opponent number given the input text
+get_opp_number <- function(text_input) {
+  return(str_trim(str_extract_all(text_input,"\\(?[0-9]+\\)?")[[1]]))
+}
+
+# swap NA for blanks
+na_if_blank <- function(text_input) {
+  returnval <- NA
+  if(length(text_input) > 0)
+    returnval <- as.integer(text_input)
+  return(returnval)
+}
+
+```
+
+## Read in the tournament file:
+
+```{r}
+# read_file: reads the whole file into a single string
+file_string <- read_file("tournamentinfo.txt")
+# split on token of 89 dashes and "unlist", ie - put char arrays to strings
+entries <- unlist(strsplit(file_string, "-{89}"))
+# confirm the number of rows, that nothing was missed:
+cat("Got ", length(entries), " rows after strsplit using -{89} delimiter.")
+```
+
+## Define the Data Frame:
+
+```{r}
+# the first 2 entries are the headers...
+row_size <- length(entries)-2;
+
+df <- data.frame(number=integer(row_size), 
+                 name=character(row_size), 
+                 pts=numeric(row_size), 
+                 state=character(row_size), 
+                 pre_rating=numeric(row_size), 
+                 post_rating=numeric(row_size), 
+                 rd_1_opp=integer(row_size), 
+                 rd_2_opp=integer(row_size), 
+                 rd_3_opp=integer(row_size), 
+                 rd_4_opp=integer(row_size), 
+                 rd_5_opp=integer(row_size), 
+                 rd_6_opp=integer(row_size), 
+                 rd_7_opp=integer(row_size), 
+                 sum_oppenent_rank=integer(row_size),
+                 num_valid_opps=integer(row_size),
+                 final_score=numeric(row_size), stringsAsFactors = FALSE)
+
+str(df)
+```
+
+## Fill the Data Frame:
+
+```{r}
+
+# 1st 2 line = headers...confirm that 1st printed is "GARY HUA"
+for (entry_index in 3:length(entries)) {
+  full_row <- entries[entry_index]
+  if(DO_DEBUG){
+    cat("FULL ROW: ", full_row, "\n")
+  }
+  # | is a special character, so gotta escape before splitting on it...
+  column_items <- unlist(strsplit(full_row, "\\|"))
+  # Get the raw values in variable form:
+  number <- as.numeric(str_trim(column_items[1]))
+  name <- str_trim(column_items[2])
+  pts<- str_trim(column_items[3])
+  state <- str_trim(column_items[11])
+  uscf_id_and_pre_post_rating <- str_trim(column_items[12])
+
+  pre_rating_parsed <- gsub(".*\\:(.*)\\->.*", "\\1", c(uscf_id_and_pre_post_rating))
+  post_rating_parsed <- gsub(".*\\->(.*)", "\\1", c(uscf_id_and_pre_post_rating))
+  # strip off the P20 from the end of the 4 digit strings...
+  pre_rating_parsed <- unlist(strsplit(pre_rating_parsed, "P"))[[1]]
+  post_rating_parsed <- unlist(strsplit(post_rating_parsed, "P"))[[1]]
+
+  rd_1_opp <- get_opp_number(column_items[4])
+  rd_2_opp <- get_opp_number(column_items[5])
+  rd_3_opp <- get_opp_number(column_items[6])
+  rd_4_opp <- get_opp_number(column_items[7])
+  rd_5_opp <- get_opp_number(column_items[8])
+  rd_6_opp <- get_opp_number(column_items[9])
+  rd_7_opp <- get_opp_number(column_items[10])
+
+  # helpful in debugging:
+  if(FALSE){
+    cat("number = ", number, "\n")
+    cat("name = ", name, "\n")
+    cat("pts = ", pts, "\n")
+    cat("state = ", state, "\n")
+    cat("uscf_id_and_pre_post_rating = ", uscf_id_and_pre_post_rating, "\n")
+    cat("pre_rating_parsed = ", pre_rating_parsed, "\n")
+    cat("post_rating_parsed = ", post_rating_parsed, "\n")
+    cat("rd_1_opp = ", rd_1_opp, "\n")
+    cat("rd_2_opp = ", rd_2_opp, "\n")
+    cat("rd_3_opp = ", rd_3_opp, "\n")
+    cat("rd_4_opp = ", rd_4_opp, "\n")
+    cat("rd_5_opp = ", rd_5_opp, "\n")
+    cat("rd_6_opp = ", rd_6_opp, "\n")
+    cat("rd_7_opp = ", rd_7_opp, "\n")
+    cat("--- row end ----------------------", "\n\n")
+  }
+  
+  # Start filling the data frame with those variables:
+  df$number[number] <- number
+  df$name[number] <- name
+  df$pts[number] <- pts
+  df$state[number] <- state
+  
+  df$pre_rating[number] <- pre_rating_parsed
+  df$post_rating[number] <- post_rating_parsed
+  # Apply NA if opponent fields are blank:
+  df$rd_1_opp[number] <- na_if_blank(rd_1_opp)
+  df$rd_2_opp[number] <- na_if_blank(rd_2_opp)
+  df$rd_3_opp[number] <- na_if_blank(rd_3_opp)
+  df$rd_4_opp[number] <- na_if_blank(rd_4_opp)
+  df$rd_5_opp[number] <- na_if_blank(rd_5_opp)
+  df$rd_6_opp[number] <- na_if_blank(rd_6_opp)
+  df$rd_7_opp[number] <- na_if_blank(rd_7_opp)
+}
+
+```
+
+
+## CALCULATIONS:
+
+```{r}
+# needed a 2nd loop, because if it was done in the same loop as above, it would have been using incomplete data, ie - doing the calcs for row 5 based on row 44 data that hadn't been filled yet...
+
+# again, 1st 2 line = headers...confirm that 1st printed is "GARY HUA"
+for (entry_index in 3:length(entries)) {
+  full_row <- entries[entry_index]
+  if(DO_DEBUG){
+    cat("FULL ROW: ", full_row, "\n")
+  }
+  # | is a special character, so gotta escape before splitting on it...
+  column_items <- unlist(strsplit(full_row, "\\|"))
+  # Get the raw values in variable form:
+  number <- as.numeric(str_trim(column_items[1]))
+  # Sum up the opponents ranks and number of opponents:
+  sum_opp_rank <- 0
+  num_valid_opps <- 0
+
+  # ADD UP THE TOTALS AND COUNT OF THE OPPONENTS:
+  if(!is.na(df$pre_rating[df$rd_1_opp[number]])){
+    sum_opp_rank <- sum_opp_rank + as.numeric(df$pre_rating[df$rd_1_opp[number]]) 
+    num_valid_opps <- num_valid_opps + 1  
+  }
+  if(!is.na(df$pre_rating[df$rd_2_opp[number]])){
+    sum_opp_rank <- sum_opp_rank + as.numeric(df$pre_rating[df$rd_2_opp[number]]) 
+    num_valid_opps <- num_valid_opps + 1  
+  }
+  if(!is.na(df$pre_rating[df$rd_3_opp[number]])){
+    sum_opp_rank <- sum_opp_rank + as.numeric(df$pre_rating[df$rd_3_opp[number]]) 
+    num_valid_opps <- num_valid_opps + 1  
+  }
+  if(!is.na(df$pre_rating[df$rd_4_opp[number]])){
+    sum_opp_rank <- sum_opp_rank + as.numeric(df$pre_rating[df$rd_4_opp[number]]) 
+    num_valid_opps <- num_valid_opps + 1  
+  }
+  if(!is.na(df$pre_rating[df$rd_5_opp[number]])){
+    sum_opp_rank <- sum_opp_rank + as.numeric(df$pre_rating[df$rd_5_opp[number]]) 
+    num_valid_opps <- num_valid_opps + 1  
+  }
+  if(!is.na(df$pre_rating[df$rd_6_opp[number]])){
+    sum_opp_rank <- sum_opp_rank + as.numeric(df$pre_rating[df$rd_6_opp[number]]) 
+    num_valid_opps <- num_valid_opps + 1  
+  }
+  if(!is.na(df$pre_rating[df$rd_7_opp[number]])){
+    sum_opp_rank <- sum_opp_rank + as.numeric(df$pre_rating[df$rd_7_opp[number]]) 
+    num_valid_opps <- num_valid_opps + 1  
+  }
+
+  # set the total sum and number of valid opponents
+  df$sum_oppenent_rank[number] <- sum_opp_rank
+  df$num_valid_opps[number] <- num_valid_opps
+
+  # Finally, set that score:
+  df$final_score[number] <- df$sum_oppenent_rank[number] %/% df$num_valid_opps[number]
+  
+}
+```
+
+## Show results and print to file:
+
+```{r}
+
+print("Script Calculations Finished.")
+
+# Player's Name, Player's State, Total Number of Points, Player's Pre-Rating, and Average Pre Chess Rating of Opponents
+# Example: Gary Hua, ON, 6.0, 1794, 1605
+to_write <- df[,c(2,4,3,5,16)]
+
+head(to_write)
+
+colnames(to_write) <- c("Player's Name", "Player's State", "Total Number of Points", "Player's Pre-Rating", "Average Pre Chess Rating of Opponents")
+
+write.csv(to_write, file = "DA607_Project_1_Output.csv")
+
+```
+

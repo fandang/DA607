@@ -1,0 +1,93 @@
+---
+title: "DA607 Week 04 Assignment"
+author: "Dan Fanelli"
+date: "February 17, 2016"
+output: html_document
+---
+
+The following raw.data string was taken from: http://www.r-datacollection.com/materials/ch-8-regex/ch-8-regex.r
+
+__3) Setup: Copy the intro example:__
+
+```{r message=FALSE, warning=FALSE}
+library(stringr)
+library(XML)
+library(RCurl)
+library(tau)
+
+# add to the list of titles if necessary...
+titles <- "(Mr.|Mrs.|Dr.|Rev.|Prof.)"
+
+# A difficult example
+raw.data <- "555-1239Moe Szyslak(636) 555-0113Burns, C. Montgomery555-6542Rev. Timothy Lovejoy555 8904Ned Flanders636-555-3226Simpson, Homer5543642Dr. Julius Hibbert"
+
+# Extract information
+name <- unlist(str_extract_all(raw.data, "[[:alpha:]., ]{2,}"))
+phone <- unlist(str_extract_all(raw.data, "\\(?(\\d{3})?\\)?(-| )?\\d{3}(-| )?\\d{4}"))
+df <- data.frame(name = name)
+df
+```
+
+__3a) extract firstname lastname__
+
+```{r message=FALSE, warning=FALSE}
+df$firstname_lastname <- df$name 
+# get rid of all the titles
+df$firstname_lastname <- str_replace_all(df$firstname_lastname, titles, "") 
+# get rid of the commas and swap first and last name if the comma was there..
+df$firstname_lastname <- gsub("([A-Za-z]+),\\s+([A-Za-z]+)", "\\2 \\1", df$firstname_lastname)
+# get rid of extrar spaces..
+df$firstname_lastname <- sub("^\\s+", "", df$firstname_lastname)
+```
+
+__3b) construct logical vector stating whether the name contains a title, ie - dr, mr..__
+
+```{r message=FALSE, warning=FALSE}
+df$has_title <- (str_count(df$name, titles) > 0)
+```
+
+__3c) construct logical vector stating whether the name contains a second name__
+
+```{r message=FALSE, warning=FALSE}
+df$has_second_name <- (sapply(gregexpr("\\W+", df$firstname_lastname), length) > 1)
+```
+
+__problem 3 results: __
+
+```{r message=FALSE, warning=FALSE}
+df
+```
+
+__7) Extract the first html tag from the following string: __ 
+
+<title>+++BREAKING NEWS+++</title>
+
+<.+> doesn't work because the . includes everything, including the closing tag >. It is 'greedy'. Using [a-z] says "take the open tag", but don't let the closed tag encapsulate another closed tag, only alpha characters.
+
+```{r message=FALSE, warning=FALSE}
+the_html_text <- "<title>+++BREAKING NEWS+++</title>"
+does_not_work <- str_extract(the_html_text, "<.+>")
+does_not_work
+
+does_work <- str_extract(the_html_text, "<([a-z]+)>")
+does_work
+```
+
+__8) Why does the bad regexp fail?__ 
+
+formula: (5-3)^2=5^2-2*5*3+3^2
+bad regexp: [^0-9=+*()]+.
+
+__Answer: put the ^ at the end of the expression __
+
+```{r message=FALSE, warning=FALSE}
+formula <- '(5-3)^2=5^2-2*5*3+3^2'
+
+bad_regexp <- '[^0-9=+*()-]+'
+str_extract(formula, bad_regexp)
+
+# fix: put the ^ at the end of the string, so the interpreter knows you actually mean the ^ character
+# the r docs say: To include a literal ^, place it anywhere but first.
+fixed_regexp <- '[0-9=+*()-^]+'
+str_extract(formula, fixed_regexp)
+```
