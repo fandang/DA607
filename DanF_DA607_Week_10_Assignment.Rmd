@@ -1,0 +1,42 @@
+---
+title: "DA607 Week 10 Assignment"
+author: "Dan Fanelli"
+date: "March 28, 2016"
+output: pdf_document
+---
+
+# Assignment - Web APIs
+
+The New York Times web site provides a rich set of APIs, as described here: http://developer.nytimes.com/docs
+
+You'll need to start by signing up for an API key. (df956f71033315e19a189086a92e03b6%3A1%3A59370888)
+
+Your task is to choose one of the New York Times APIs, construct an interface in R to read in the JSON data, and transform it to an R dataframe.
+
+
+```{r message=FALSE, warning=FALSE}
+library(jsonlite)
+library(knitr)
+
+# NY Times Congress API Key: df956f71033315e19a189086a92e03b6:1:59370888
+
+NY_TIMES_CONGRESS_HOUSE_MEMBERS_JSON_URL = 'http://api.nytimes.com/svc/politics/v3/us/legislative/congress/102-113/house/members/current.json?api-key=df956f71033315e19a189086a92e03b6%3A1%3A59370888'
+
+json_file <- fromJSON(NY_TIMES_CONGRESS_HOUSE_MEMBERS_JSON_URL)
+df <- as.data.frame(json_file$results$members)
+```
+
+## The Following are a list of (the top 20) Members of Congress:
+
+Subset with good UI:
+
+```{r message=FALSE, warning=FALSE}
+kable(head(df[ , (names(df) %in% c('id','first_name','last_name','state','party','seniority','missed_votes'))], n = 20))
+```
+
+All columns with core UI:
+
+```{r message=FALSE, warning=FALSE}
+head(df, n = 20)
+```
+
