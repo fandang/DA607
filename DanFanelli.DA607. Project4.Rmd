@@ -1,0 +1,117 @@
+---
+title: "Project 4 - DA 607"
+author: "Dan Fanelli"
+date: "April 16, 2016"
+output: html_document
+---
+
+This project will load film and actor data from the sakila MySQL database and write the data to a Neo4J Database.
+
+## Setup/Prereqs: 
+
+* MySQL DB installed and running at
+* MySQL create schema with script: sakila-schema.sql
+* MySQL load data with script: sakila-data.sql
+
+* Neo4j installed and running at: http://localhost:7474/db/data/
+
+## Imports and Credentials: 
+
+```{r warning=FALSE, message=FALSE}
+library(RMySQL)
+library(RNeo4j)
+library(knitr)
+library(igraph)
+library(visNetwork)
+
+DO_DEBUG = FALSE
+
+NEO4J_GRAPH_URL <- 'http://localhost:7474/db/data/'
+NEO4J_USER <- 'neo4j'
+NEO4J_PW <- 'neo5j'
+
+MYSQL_HOST <- '127.0.0.1'
+MYSQL_USER <- 'root'
+MYSQL_PW <- 'george'
+MYSQL_SCHEMA <- 'sakila'
+# to limit this query if it takes too long....
+FILMS_LIMIT <- 200
+```
+
+## MySQL and Neo4J read/write/query functions: 
+
+```{r warning=FALSE, message=FALSE}
+# Get the MySQL DB
+get_mysql_db <- function(film){
+  the_db = dbConnect(MySQL(), user=MYSQL_USER, password=MYSQL_PW, dbname=MYSQL_SCHEMA, host=MYSQL_HOST)
+  return (the_db)
+}
+
+# Create a GraphDB Film based on DB Row
+create_neo4j_film <- function(film, db, graph, films_df){
+  
+  film_id <- film[1]
+  film_title <- film[2]
+  film_desc <- film[3]
+  film_year <- film[4]
+  if(DO_DEBUG)
+    print(cat(film_id, '-', film_title, '-', film_desc, '-', film_year))
+  
+  the_film_node = createNode(graph, "Film", title=film_title, year=film_year, desc=film_desc)
+  
+    select_actors_sql <- paste0('select a.first_name, a.last_name from actor a, film_actor fa where a.actor_id = fa.actor_id and fa.film_id = ', film_id)
+  rs = dbSendQuery(db, select_actors_sql)
+  actors_df = fetch(rs, n=-1)
+  if(DO_DEBUG)
+    print(cat("film: ",film_title))
+  apply(actors_df, 1, function(y) create_neo4j_actor_and_perf(y, db = the_db, graph = graph, film_node = the_film_node, film_title=film_title))
+  if(DO_DEBUG)
+    print("done with film.")
+}
+
+# Create a GraphDB Actor based on DB Row
+create_neo4j_actor_and_perf <- function(actor, db, graph, film_node, film_title){
+  actor_first_name <- actor[1]
+  actor_last_name <- actor[2]
+  the_actor_node = createNode(graph, "Actor", first_name=actor_first_name, last_name=actor_last_name)
+  performance_rel = createRel(the_actor_node, "PERFORMANCE", film_node)
+}
+
+# Run the whole thing: DB Select, Graph Load
+mysql_select_and_neo4j_load <- function(the_graph){
+  the_mysql_db <- get_mysql_db()
+  rs = dbSendQuery(the_mysql_db, paste0('select film_id, title, description, release_year from film limit ', FILMS_LIMIT))
+  films_df = fetch(rs, n=-1)
+  kable(head(films_df))
+  print('db loaded and queried.')
+  apply(films_df, 1, function(x) create_neo4j_film(x, db = the_mysql_db, graph = the_graph, films_df = films_df))
+}
+
+######## Select the data from mysql, and load it into neo4j:
+the_graph = startGraph(NEO4J_GRAPH_URL, username=NEO4J_USER, password=NEO4J_PW)
+
+mysql_select_and_neo4j_load(the_graph)
+print('Done with mysql select and neo4j load.')
+```
+
+## Now prove the Neo4J Data store got loaded with some queries: 
+
+### QUERY: Find ACADEMY DINOSAUR
+
+```{r warning=FALSE, message=FALSE}
+cypherToList(the_graph, "MATCH (found_flic {title: 'ACADEMY DINOSAUR'}) RETURN found_flic.title, found_flic.year")
+```
+
+### QUERY: Actors with last name BLOOM
+
+```{r warning=FALSE, message=FALSE}
+cypherToList(the_graph, "MATCH (found_actor {last_name: 'BLOOM'}) RETURN found_actor.first_name, found_actor.last_name")
+```
+
+### QUERY: Actors with first name JOHN
+
+```{r warning=FALSE, message=FALSE}
+cypherToList(the_graph, "MATCH (found_actor {first_name: 'JOHN'}) RETURN found_actor.first_name, found_actor.last_name")
+```
+
+
