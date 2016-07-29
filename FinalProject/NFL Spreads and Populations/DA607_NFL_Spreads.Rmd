@@ -1,0 +1,353 @@
+---
+title: 'DA 607: NFL Spreads: Populations, Underdogs, and other Factors'
+output:
+  html_document:
+    highlight: default
+    theme: spacelab
+    toc: yes
+    toc_depth: 3
+  pdf_document:
+    toc: yes
+---
+
+<style type = "text/css">
+h1 {
+  background-color: #CCCCCC;
+  padding:5px;
+  border:1px solid #AAAAAA;
+}
+h2 {
+  background-color: #DDDDDD;
+  padding:5px;
+  border:1px solid #AAAAAA;
+}
+h3 {
+  background-color: #EEEEEE;
+  padding:5px;
+  border:1px solid #AAAAAA;
+}
+</style>
+
+![What Happens in DA607...](nfl-betting-odds-lines.png)
+
+# Introduction
+
+* Vegas bookies create the spreads for NFL Football games.
+* They don't care if the spread is "correct", they want 50% of betters to choose each team (guaranteeing their "rake")
+* If betters favor certain matchup attributes, perhaps this can be exploited.
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+library(knitr)
+library(sqldf)
+library(XML)
+library(httr)
+library(rvest)
+library(magrittr)
+library(ggplot2)
+library(FSelector)
+
+options(rstudio.markdownToHTML = 
+  function(inputFile, outputFile) {      
+    require(markdown)
+    markdownToHTML(inputFile, outputFile, stylesheet='DA607_NFL_Spreads.css')   
+  }
+)
+
+DO_DOWNLOAD_FILES <- FALSE
+DO_HARRIS_POLL_FAVS <- TRUE
+HARRIS_POLL_URL <- "http://www.theharrispoll.com/sports/Americas-Favorite-Football-Team-2015.html"
+```
+
+# Factors to Analyze
+
+* __Historic NFL Lines:__ Does a teams historical performance against the spread create bias on the current spread?  Example: How often have they covered in the past?
+* __Harris Poll Popularity Rankings:__ Does a teams "popularity", as measured by the Harris Poll, create betting bias?
+* __City Populations:__ Does the size of the city, and thus their "betting population", create bias in the spreads?
+* __Game Location:__ How often does the Home team cover the spread?
+* __Points Scored:__ Does "how much they covered by" history affect the teams current spreads?
+* __Stadium Attendance:__ Does the teams stadium attendance (percent of stadium capacity filled) show a betting bias that can be exploited?
+
+
+# ESEMN Workflow
+
+## Obtain + Scrub form the following 3 Data Sources
+
+### Source 1: Historic NFL Lines
+
+Download the Historic NFL Lines CSVs from web to disk:
+
+https://github.com/mattrjacobs/nflspread/tree/master/files
+
+```{r message=FALSE, warning=FALSE}
+# dont want to keep downloading from web each time:
+
+url_prefix <- 'https://raw.githubusercontent.com/mattrjacobs/nflspread/master/files/nfl'
+
+if(DO_DOWNLOAD_FILES){
+  for(i in 1979:2013)
+  {
+    input_url <- paste(url_prefix,i,"lines.csv", sep="")
+    output_file <- paste("lines/nfl",i,"lines.csv", sep="")
+    download.file(input_url, destfile=output_file)
+  }
+}
+```
+
+### Source 2: Harris Poll - Scrape for Year-over-Year Team Rankings
+
+This includes the "one data transformation operation", removing all equal (=) signs from the rankings table.
+
+```{r message=FALSE, warning=FALSE}
+if(DO_HARRIS_POLL_FAVS){
+ harris_tables <- readHTMLTable(HARRIS_POLL_URL, header = TRUE)
+  harris_df <- harris_tables[[3]]
+  colnames(harris_df)[1] <- "team"
+  # some had = sign before numbers, got it out...
+  harris_df <- as.data.frame(sapply(harris_df,gsub,pattern="=",replacement=""))
+  numeric_cols <- c(2:ncol(harris_df))
+  harris_df[, numeric_cols] <- sapply(harris_df[, numeric_cols], as.numeric)
+  harris_df$MEAN_RANK <- rowMeans(subset(harris_df, select = numeric_cols), na.rm = TRUE)
+  harris_sub <- c(ncol((harris_df)-5):(ncol(harris_df)-1))
+  harris_df$MEAN_RANK_5 <- rowMeans(subset(harris_df, select = harris_sub), na.rm = TRUE)
+  kable(head(harris_df[,-c(4:12)]))
+}
+
+```
+
+See above for MEAN of rankings, and below for graphcs of team's mean ranks.
+
+```{r message=FALSE, warning=FALSE}
+the_aes <- aes(x=reorder(team,-MEAN_RANK), y=MEAN_RANK)
+plt <- ggplot(harris_df, the_aes) + geom_bar(stat="identity")
+plt <- plt + ggtitle("Average Year-over-Year HARRIS POLL 'RANK'") + labs(x="team", y="MEAN RANK")
+plt <- plt + stat_summary(fun.y=sum, geom="bar") 
+plt <- plt + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+show(plt)
+```
+
+### Source 3: City Populations
+
+Data was copy-pasted from the following Wikipedia Link:
+
+https://en.wikipedia.org/wiki/List_of_United_States_cities_by_population
+
+and in the following manner:
+
+
+```{r eval=TRUE, message=FALSE, warning=FALSE}
+do_explicit_populations <- function(df){
+
+  df[, "pop"] <- 0
+
+  df[df$team == "New York Giants", "pop"] <- 8491079
+  df[df$team == "Green Bay Packers", "pop"] <- 104891
+
+  # same for the rest of the teams....not showing here (too many lines...)
+}  
+```
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+do_explicit_populations <- function(df){
+
+  df[, "pop"] <- 0
+
+  df[df$team == "New York Giants", "pop"] <- 8491079
+  df[df$team == "Green Bay Packers", "pop"] <- 104891
+  df[df$team == "Houston Oilers", "pop"] <- 2239558
+  df[df$team == "Kansas City Chiefs", "pop"] <- 470800
+  df[df$team == "Miami Dolphins", "pop"] <- 430332
+  df[df$team == "Oakland Raiders", "pop"] <- 413775
+  df[df$team == "Pittsburgh Steelers", "pop"] <- 305412
+  df[df$team == "Los Angeles Rams", "pop"] <- 3928864
+  df[df$team == "San Diego Chargers", "pop"] <- 1381069
+  df[df$team == "San Francisco 49ers", "pop"] <- 852469
+  df[df$team == "St Louis Cardinals", "pop"] <- 317419
+  df[df$team == "Minnesota Vikings", "pop"] <- 407207
+  df[df$team == "Washington Redskins", "pop"] <- 658893
+  df[df$team == "Baltimore Colts", "pop"] <- 622793
+  df[df$team == "Detroit Lions", "pop"] <- 680250
+  df[df$team == "Atlanta Falcons", "pop"] <- 456002
+  df[df$team == "Chicago Bears", "pop"] <- 2722389
+  df[df$team == "Cincinnati Bengals", "pop"] <- 298165
+  df[df$team == "Dallas Cowboys", "pop"] <- 1281047
+  # Boston...
+  df[df$team == "New England Patriots", "pop"] <- 655884
+  df[df$team == "New Orleans Saints", "pop"] <- 384320
+  df[df$team == "New York Jets", "pop"] <- 8491079
+  df[df$team == "Philadelphia Eagles", "pop"] <- 1560297
+  df[df$team == "Seattle Seahawks", "pop"] <- 668342
+  df[df$team == "Denver Broncos", "pop"] <- 663862
+  df[df$team == "Buffalo Bills", "pop"] <- 258703
+  df[df$team == "Cleveland Browns", "pop"] <- 389521
+  df[df$team == "Tampa Bay Buccaneers", "pop"] <- 358699
+  df[df$team == "Los Angeles Raiders", "pop"] <- 3928864
+  df[df$team == "Indianapolis Colts", "pop"] <- 848788
+  df[df$team == "Phoenix Cardinals", "pop"] <- 1537058
+  df[df$team == "Arizona Cardinals", "pop"] <- 1537058
+  # Charlotte
+  df[df$team == "Carolina Panthers", "pop"] <- 809958
+  df[df$team == "St Louis Rams", "pop"] <- 317419
+  df[df$team == "Jacksonville Jaguars", "pop"] <- 853382
+  df[df$team == "Baltimore Ravens", "pop"] <- 622793
+  # Nashville
+  df[df$team == "Tennessee Oilers", "pop"] <- 644014
+  # Nashville
+  df[df$team == "Tennessee Titans", "pop"] <- 644014
+  df[df$team == "Houston Texans", "pop"] <- 2239558
+  
+  # anything left?
+  df[df$pop == 0,]
+  
+  return (df)
+}
+
+harris_df_with_pops <- do_explicit_populations(harris_df)
+kable(head(harris_df_with_pops[,c(1,ncol(harris_df_with_pops))]))
+
+```
+
+# Work
+
+In these steps, just gathering the data and raw calculations, will do analysis in "Conclusions")
+
+### Work 1: Load the downloaded CSVs of historical games into a Data Frame.
+
+DataFrame created: "lines_df""
+
+```{r message=FALSE, warning=FALSE}
+lines_df <- read.csv(paste("lines/nfl",1978,"lines.csv", sep=""))
+lines_df['season'] <- 1978
+for(i in 1979:2013)
+{
+  filepath <- paste("lines/nfl",i,"lines.csv", sep="")
+  #print(filepath)
+  lines_df_new <- read.csv(filepath)
+  lines_df_new['season'] <- i
+  lines_df <- rbind(lines_df, lines_df_new)
+}
+
+colnames(lines_df) <- c("date","v_team","v_score","h_team","h_score","line","total", "season")
+```
+
+### Work 2: New Field: "h_covered": Did the HOME team "cover"?
+
+DataFrame updated: "lines_df""
+
+```{r message=FALSE, warning=FALSE}
+lines_df$h_covered <- ((lines_df$v_score + lines_df$line) > lines_df$h_score)
+kable(head(lines_df))
+
+# Just confirming the rowcounts are good...winners + losers == rowcount
+lines_df_home_covered <- sum(lines_df$h_covered==TRUE)
+lines_df_home_didnt_cover <- sum(lines_df$h_covered==FALSE)
+
+# confirm it adds up to total number of rows:
+sum(lines_df_home_covered, lines_df_home_didnt_cover) == nrow(lines_df)
+
+```
+
+### Work 3: Choose 2013 Season to Analyze
+
+Subset the spreads data, only take 2013 (the most recent):
+
+DataFrame updated: "lines_df""
+
+```{r message=FALSE, warning=FALSE}
+lines_df <- lines_df[lines_df$season == 2013,]
+kable(head(lines_df))
+```
+
+### Work 4: Create 'Winner Points' Data Subset:
+
+DataFrame created: "covered_by_summary_df"
+
+How much did you score when you won?
+
+Its a union of home_points when home_covered and away_points when not(home_covered)
+
+Therefore, your times covered matter (because you only get the points if you covered) and the total points matter (because we're summing up the points on the days that you covered)
+
+```{r message=FALSE, warning=FALSE}
+covered_by_summary_home_away <- sqldf("select h_team as team, sum(h_score) as winner_points from lines_df where h_covered group by team union select v_team as team, sum(v_score) as winner_points from lines_df where not(h_covered) group by team ", stringsAsFactors = FALSE)
+
+covered_by_summary_df <- sqldf("select team, sum(winner_points) as winner_points from covered_by_summary_home_away group by team order by winner_points desc", stringsAsFactors = FALSE)
+kable(head(covered_by_summary_df))
+
+```
+
+### Work 6: Merge the h_score and v_score logic (turn into times covered)
+
+DataFrame created: "times_covered_df"
+
+Subset the spreads data, only take 2013 (the most recent):
+
+```{r message=FALSE, warning=FALSE}
+covered_count_home_away <- sqldf("select h_team as team, count(*) as times_covered from lines_df where h_covered group by team union select v_team as team, count(*) as times_covered from lines_df where not(h_covered) group by team ", stringsAsFactors = FALSE)
+
+times_covered_df <- sqldf("select team, sum(times_covered) as times_covered from covered_count_home_away group by team order by times_covered desc", stringsAsFactors = FALSE)
+
+kable(head(times_covered_df[,]))
+```
+
+
+### Work 7: Stadium Attendance
+
+```{r message=FALSE, warning=FALSE}
+attendance_df <- read.csv("Stadium_Attendance.csv")
+kable(head(attendance_df))
+```
+
+
+### Work 8: Populations (and start the merge...)
+
+```{r message=FALSE, warning=FALSE}
+final_df <- do_explicit_populations(covered_by_summary_df)
+kable(head(final_df))
+```
+
+
+### Work (FINAL MERGE): All into single data frame for Analysis:
+
+```{r message=FALSE, warning=FALSE}
+harris_to_merge <- harris_df[ , which(names(harris_df) %in% c("team","MEAN_RANK","MEAN_RANK_5"))]
+final_df <- merge(final_df,times_covered_df,by="team")
+final_df <- merge(final_df,harris_to_merge,by="team")
+attendance_df_to_merge <- attendance_df[ , which(names(attendance_df) %in% c("team","Capacity.percentage"))]
+final_df <- merge(final_df,attendance_df_to_merge,by="team")
+
+kable(head(final_df))
+```
+
+# The Calculations
+
+```{r message=FALSE, warning=FALSE}
+# final_df$team + 
+final_lm <- lm(final_df$times_covered ~ final_df$winner_points + final_df$pop + final_df$MEAN_RANK + final_df$MEAN_RANK_5 + final_df$Capacity.percentage)
+
+summary(final_lm)
+
+
+times_covered_ig <- information.gain(times_covered~., final_df)
+
+print(times_covered_ig)
+
+```
+
+# Conclusions
+
+There are flaws in the logic here:
+
+* The spreads Data is from 2013 while the "favorites"" data 2015
+* Picked random number of years for Harris Poll averages (ie 5 and ALL for which years to summarize)
+* Not looking at many other factors, such as win streaks, player statistics, etc.
+* Some stats are slightly circular: The team ranks may be determined by how often they cover
+
+With those flaws in mind, there seems to be some factors that could be significant:
+
+* There's only a __6% chance__ that the stadium capacity % is due to chance.
+* __The MEAN RANKS:__ The fact that the __OVERALL MEAN RANK__ has more significance than the __5 YEAR MEAN RANK__ is interesting. Do "winners" go to historically strong teams?  If nothing else, it may show that betters care more about "recent history" than "historical tradition".
+
+It would be quite interesting to look at statistics more historically to see if there was a point and time in which these predictions would have been more possible, when all of the indicators were not already in use to create the lines.
+
+
+
+

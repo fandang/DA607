@@ -1,0 +1,32 @@
+{
+  "assignment": {
+    "books": {
+      "book": [
+        {
+          "title": "The Big Short: Inside the Doomsday Machine",
+          "amazon_stars": "4.4",
+          "num_pages": "287",
+          "author": "Michael Lewis",
+          "summary": "The real story of the crash began in bizarre feeder markets where the sun doesn't shine and the SEC doesn't dare, or bother, to tread: the bond and real estate derivative markets where geeks invent impenetrable securities to profit from the misery of lower- and middle-class Americans who can't pay their debts. The smart people who understood what was or might be happening were paralyzed by hope and fear; in any case, they weren't talking."
+        },
+        {
+          "title": "The One Year Uncommon Life Daily Challenge",
+          "amazon_stars": "4.8",
+          "num_pages": "384",
+          "author": [
+            "Tony Dungy",
+            "Nathan Whitaker"
+          ],
+          "summary": "Strengthen the core of your life and faith on a year-long journey with beloved Super Bowl winning former head coach Tony Dungy! The One Year Uncommon Life Daily Challenge contains 365 reflections from the #1 New York Times bestselling author on living an uncommon life of integrity, honoring your family and friends, creating a life of real significance and impact, and walking with the Lord. This year, step up to the challenge?and dare to be uncommon every day.Strengthen the core of your life and faith on a year-long journey with beloved Super Bowl winning former head coach Tony Dungy! The One Year Uncommon Life Daily Challenge contains 365 reflections from the #1 New York Times bestselling author on living an uncommon life of integrity, honoring your family and friends, creating a life of real significance and impact, and walking with the Lord. This year, step up to the challenge?and dare to be uncommon every day.Strengthen the core of your life and faith on a year-long journey with beloved Super Bowl winning former head coach Tony Dungy! The One Year Uncommon Life Daily Challenge contains 365 reflections from the #1 New York Times bestselling author on living an uncommon life of integrity, honoring your family and friends, creating a life of real significance and impact, and walking with the Lord. This year, step up to the challenge?and dare to be uncommon every day.Strengthen the core of your life and faith on a year-long journey with beloved Super Bowl winning former head coach Tony Dungy! The One Year Uncommon Life Daily Challenge contains 365 reflections from the #1 New York Times bestselling author on living an uncommon life of integrity, honoring your family and friends, creating a life of real significance and impact, and walking with the Lord. This year, step up to the challenge?and dare to be uncommon every day."
+        },
+        {
+          "title": "The Signal and the Noise: Why So Many Predictions Fail-but Some Don't",
+          "amazon_stars": "4.3",
+          "num_pages": "545",
+          "author": "Nate Silver",
+          "summary": "Nate Silver built an innovative system for predicting baseball performance, predicted the 2008 election within a hair's breadth, and became a national sensation as a blogger all by the time he was thirty. He solidified his standing as the nation's foremost political forecaster with his near perfect prediction of the 2012 election. Silver is the founder and editor in chief of FiveThirtyEight.com."
+        }
+      ]
+    }
+  }
+}
